@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent_policy"
+version = "0.1.0"
+description = "agent capability policy checker"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [{name = "Jonah Helland"}]
+dependencies = []
+
+[project.scripts]
+agent-policy = "agent_policy.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
