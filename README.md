@@ -33,6 +33,18 @@ The smallest useful policy and request look like this:
 agent-policy check request.json --policy policy.json
 ```
 
+## See it work
+
+The demo makes the decision and its reason explicit before a caller acts:
+
+```json
+{"schema":"agent-policy/v1","decision":"allow","allowed":true,"kind":"command","value":"git status","reason":"matching rule"}
+```
+
+## Related tools
+
+Pair [Agent Policy](https://github.com/jonah-ux/agent-policy) with [Agent Sandbox Run](https://github.com/jonah-ux/agent-sandbox-run) for execution receipts, [Agent Proof](https://github.com/jonah-ux/agent-proof) for evidence, and [MCP Doctor](https://github.com/jonah-ux/mcp-doctor) for tool-contract checks.
+
 The output uses the `agent-policy/v1` schema and exits `0` for an allowed request or `1` for a
 denied request, so a shell, CI job, or agent can stop before acting.
 
