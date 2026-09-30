@@ -1,0 +1,1 @@
+{"version": 1, "operations": [{"type": "path", "action": "read", "path": "src/agent_policy/engine.py"}, {"type": "path", "action": "read", "path": ".env"}, {"type": "command", "action": "run", "argv": ["pytest", "-q"]}, {"type": "network", "action": "connect", "host": "docs.python.org", "port": 443, "protocol": "tcp"}]}

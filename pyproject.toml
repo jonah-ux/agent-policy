@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-policy"
+version = "0.1.0"
+description = "Deny-by-default policy evaluation for agent operations"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [{name = "Jonah UX"}]
+keywords = ["policy", "security", "agents", "authorization"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+]
+dependencies = []
+
+[project.optional-dependencies]
+yaml = ["PyYAML>=6.0"]
+sandbox = ["bubblewrap>=0.1; platform_system == 'Linux'", "pywin32>=306; platform_system == 'Windows'"]
+dev = ["build>=1.2", "pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+agent-policy = "agent_policy.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_policy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
