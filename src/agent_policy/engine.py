@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import fnmatch
+import ipaddress
 import re
 from typing import Any
 
@@ -38,6 +39,8 @@ _OP_FIELDS = {
     "git": {"type", "action", "repository"},
 }
 _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_HOST_LABEL = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+_HOST_PATTERN_LABEL = re.compile(r"^[A-Za-z0-9*?](?:[A-Za-z0-9*?-]{0,61}[A-Za-z0-9*?])?$")
 
 
 def _mapping(value: Any, label: str) -> dict[str, Any]:
@@ -51,13 +54,19 @@ def _strings(value: Any, label: str, *, nonempty: bool = True) -> list[str]:
         raise PolicyError(f"{label} must be a non-empty list of strings")
     if any(not isinstance(item, str) or not item for item in value):
         raise PolicyError(f"{label} must contain only non-empty strings")
+    if any(any(ord(char) < 32 or ord(char) == 127 for char in item) for item in value):
+        raise PolicyError(f"{label} must not contain control characters")
     return value
 
 
 def normalize_path(value: Any, label: str) -> str:
     """Return a workspace-relative POSIX path, rejecting traversal and absolutes."""
-    if not isinstance(value, str) or not value or "\x00" in value:
-        raise PolicyError(f"{label} must be a non-empty path without NUL")
+    if (
+        not isinstance(value, str)
+        or not value
+        or any(ord(char) < 32 or ord(char) == 127 for char in value)
+    ):
+        raise PolicyError(f"{label} must be a non-empty path without control characters")
     path = value.replace("\\", "/")
     if path.startswith(("/", "~")) or re.match(r"^[A-Za-z]:", path):
         raise PolicyError(f"{label} must be relative to the workspace")
@@ -68,8 +77,8 @@ def normalize_path(value: Any, label: str) -> str:
 
 
 def _path_pattern(value: str, label: str) -> str:
-    if "\x00" in value:
-        raise PolicyError(f"{label} must not contain NUL")
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        raise PolicyError(f"{label} must not contain control characters")
     pattern = value.replace("\\", "/")
     if pattern.startswith(("/", "~")) or re.match(r"^[A-Za-z]:", pattern):
         raise PolicyError(f"{label} must be workspace-relative")
@@ -78,13 +87,59 @@ def _path_pattern(value: str, label: str) -> str:
     return "/".join(part for part in pattern.split("/") if part not in ("", ".")) or "."
 
 
+def _normalize_host(value: Any, label: str) -> str:
+    """Normalize one concrete DNS name or IP address for a network request."""
+    if not isinstance(value, str) or not value or any(ord(char) < 32 or ord(char) == 127 for char in value):
+        raise PolicyError(f"{label} must be a concrete hostname or IP address")
+    host = value[:-1] if value.endswith(".") else value
+    try:
+        host_length = len(host.encode("idna"))
+    except UnicodeError as exc:
+        raise PolicyError(f"{label} must be a concrete hostname or IP address") from exc
+    if not host or host_length > 253:
+        raise PolicyError(f"{label} must be a concrete hostname or IP address")
+    try:
+        return str(ipaddress.ip_address(host))
+    except ValueError:
+        pass
+    if any(char.isspace() for char in host) or "/" in host or "\\" in host:
+        raise PolicyError(f"{label} must be a concrete hostname or IP address")
+    labels = host.split(".")
+    if any(not _HOST_LABEL.fullmatch(part) for part in labels):
+        raise PolicyError(f"{label} must be a concrete hostname or IP address")
+    return host.lower()
+
+
+def _normalize_host_pattern(value: str, label: str) -> str:
+    """Normalize a literal or simple glob host pattern from a policy."""
+    if not isinstance(value, str) or not value or any(ord(char) < 32 or ord(char) == 127 for char in value):
+        raise PolicyError(f"{label} must contain valid host patterns")
+    pattern = value[:-1] if value.endswith(".") else value
+    try:
+        pattern_length = len(pattern.encode("idna"))
+    except UnicodeError as exc:
+        raise PolicyError(f"{label} must contain valid host patterns") from exc
+    if not pattern or pattern_length > 253:
+        raise PolicyError(f"{label} must contain valid host patterns")
+    if "[" in pattern or "]" in pattern or any(char.isspace() for char in pattern):
+        raise PolicyError(f"{label} must contain valid host patterns")
+    if not any(char in pattern for char in "*?"):
+        return _normalize_host(pattern, label)
+    if "/" in pattern or "\\" in pattern or ":" in pattern:
+        raise PolicyError(f"{label} must contain valid host patterns")
+    labels = pattern.split(".")
+    if any(not _HOST_PATTERN_LABEL.fullmatch(part) for part in labels):
+        raise PolicyError(f"{label} must contain valid host patterns")
+    return pattern.lower()
+
+
 def validate_policy(value: Any) -> dict[str, Any]:
     policy = _mapping(value, "policy")
     if set(policy) != {"version", "default", "rules"}:
         extra = sorted(set(policy) - {"version", "default", "rules"})
         missing = sorted({"version", "default", "rules"} - set(policy))
         raise PolicyError(f"policy fields mismatch (missing={missing}, unknown={extra})")
-    if policy["version"] != 1 or isinstance(policy["version"], bool):
+    if type(policy["version"]) is not int or policy["version"] != 1:
         raise PolicyError("policy version must be integer 1")
     if policy["default"] != "deny":
         raise PolicyError("policy default must be 'deny'")
@@ -136,10 +191,10 @@ def validate_policy(value: Any) -> dict[str, Any]:
                 raise PolicyError(f"{label}.names contains an invalid environment-name pattern")
             normalized["names"] = names
         elif kind == "network":
-            normalized["hosts"] = _strings(rule.get("hosts"), f"{label}.hosts")
-            for host in normalized["hosts"]:
-                if any(char.isspace() for char in host) or "/" in host or "\x00" in host:
-                    raise PolicyError(f"{label}.hosts contains an invalid host pattern")
+            normalized["hosts"] = [
+                _normalize_host_pattern(host, f"{label}.hosts")
+                for host in _strings(rule.get("hosts"), f"{label}.hosts")
+            ]
             ports = rule.get("ports", [])
             if not isinstance(ports, list) or any(type(port) is not int or not 1 <= port <= 65535 for port in ports):
                 raise PolicyError(f"{label}.ports must contain integers from 1 through 65535")
@@ -188,13 +243,12 @@ def _validate_operation(raw: Any, index: int) -> dict[str, Any]:
         host = operation["host"]
         port = operation["port"]
         protocol = operation["protocol"]
-        if not isinstance(host, str) or not host or any(char.isspace() for char in host) or "/" in host:
-            raise PolicyError(f"{label}.host must be a hostname or IP address")
+        host = _normalize_host(host, f"{label}.host")
         if type(port) is not int or not 1 <= port <= 65535:
             raise PolicyError(f"{label}.port must be an integer from 1 through 65535")
         if not isinstance(protocol, str) or protocol not in {"tcp", "udp"}:
             raise PolicyError(f"{label}.protocol must be 'tcp' or 'udp'")
-        normalized["host"] = host.rstrip(".").lower()
+        normalized["host"] = host
     return normalized
 
 
@@ -204,7 +258,7 @@ def validate_request(value: Any) -> dict[str, Any]:
         extra = sorted(set(request) - {"version", "operations"})
         missing = sorted({"version", "operations"} - set(request))
         raise PolicyError(f"request fields mismatch (missing={missing}, unknown={extra})")
-    if request["version"] != 1 or isinstance(request["version"], bool):
+    if type(request["version"]) is not int or request["version"] != 1:
         raise PolicyError("request version must be integer 1")
     if not isinstance(request["operations"], list):
         raise PolicyError("request operations must be a list")
@@ -216,7 +270,7 @@ def _matches(rule: dict[str, Any], operation: dict[str, Any]) -> bool:
     if rule["kind"] != kind or operation["action"] not in rule["actions"]:
         return False
     if kind == "path":
-        return any(fnmatch.fnmatchcase(operation["path"], pattern) for pattern in rule["paths"])
+        return any(_match_relative_pattern(operation["path"], pattern) for pattern in rule["paths"])
     if kind == "command":
         if not any(fnmatch.fnmatchcase(operation["argv"][0], pattern) for pattern in rule["commands"]):
             return False
@@ -235,7 +289,35 @@ def _matches(rule: dict[str, Any], operation: dict[str, Any]) -> bool:
             and (not rule["ports"] or operation["port"] in rule["ports"])
             and (not rule["protocols"] or operation["protocol"] in rule["protocols"])
         )
-    return any(fnmatch.fnmatchcase(operation["repository"], pattern) for pattern in rule["repositories"])
+    return any(_match_relative_pattern(operation["repository"], pattern) for pattern in rule["repositories"])
+
+
+def _match_relative_pattern(value: str, pattern: str) -> bool:
+    """Match path components without allowing '*' to cross a '/'."""
+    value_parts = value.split("/")
+    pattern_parts = pattern.split("/")
+    memo: dict[tuple[int, int], bool] = {}
+
+    def match(value_index: int, pattern_index: int) -> bool:
+        key = (value_index, pattern_index)
+        if key in memo:
+            return memo[key]
+        if pattern_index == len(pattern_parts):
+            result = value_index == len(value_parts)
+        elif pattern_parts[pattern_index] == "**":
+            result = match(value_index, pattern_index + 1) or (
+                value_index < len(value_parts) and match(value_index + 1, pattern_index)
+            )
+        else:
+            result = (
+                value_index < len(value_parts)
+                and fnmatch.fnmatchcase(value_parts[value_index], pattern_parts[pattern_index])
+                and match(value_index + 1, pattern_index + 1)
+            )
+        memo[key] = result
+        return result
+
+    return match(0, 0)
 
 
 def _summary(operation: dict[str, Any]) -> dict[str, Any]:

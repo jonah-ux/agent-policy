@@ -14,7 +14,7 @@ from . import PolicyError, evaluate
 def _load(path: str) -> Any:
     try:
         text = pathlib.Path(path).read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         raise PolicyError(f"cannot read {path}: {exc}") from exc
     try:
         if path.lower().endswith(('.yaml', '.yml')):
@@ -22,10 +22,38 @@ def _load(path: str) -> Any:
                 import yaml  # type: ignore[import-not-found]
             except ImportError as exc:
                 raise PolicyError("YAML input needs the optional 'yaml' extra: pip install agent-policy[yaml]") from exc
-            return yaml.safe_load(text)
-        return json.loads(text)
+            try:
+                class UniqueKeyLoader(yaml.SafeLoader):
+                    pass
+
+                def construct_mapping(loader: Any, node: Any, deep: bool = False) -> dict[str, Any]:
+                    mapping: dict[str, Any] = {}
+                    for key_node, value_node in node.value:
+                        key = loader.construct_object(key_node, deep=deep)
+                        if key in mapping:
+                            raise PolicyError(f"duplicate mapping key: {key}")
+                        mapping[key] = loader.construct_object(value_node, deep=deep)
+                    return mapping
+
+                UniqueKeyLoader.add_constructor(
+                    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+                    construct_mapping,
+                )
+                return yaml.load(text, Loader=UniqueKeyLoader)
+            except yaml.YAMLError as exc:
+                raise PolicyError(f"invalid YAML in {path}: {exc}") from exc
+        return json.loads(text, object_pairs_hook=_reject_duplicate_keys)
     except (ValueError, TypeError) as exc:
         raise PolicyError(f"invalid JSON in {path}: {exc}") from exc
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise PolicyError(f"duplicate object key: {key}")
+        result[key] = value
+    return result
 
 
 def _dump(value: Any) -> None:
