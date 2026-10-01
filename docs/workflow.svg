@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 210" role="img" aria-labelledby="title desc">
+  <title id="title">agent-policy review workflow</title>
+  <desc id="desc">Author a policy, submit structured operations, evaluate with deny-by-default, inspect a receipt, and optionally hand off to a separate sandbox.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1"><stop stop-color="#0f172a"/><stop offset="1" stop-color="#172554"/></linearGradient>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#93c5fd"/></marker>
+  </defs>
+  <rect width="1100" height="210" rx="18" fill="url(#bg)"/>
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <g fill="#e0f2fe" stroke="#38bdf8" stroke-width="2">
+      <rect x="24" y="66" width="180" height="78" rx="12"/><rect x="236" y="66" width="180" height="78" rx="12"/>
+      <rect x="448" y="66" width="180" height="78" rx="12"/><rect x="660" y="66" width="180" height="78" rx="12"/>
+      <rect x="872" y="66" width="204" height="78" rx="12"/>
+    </g>
+    <g fill="#0f172a" font-size="16" font-weight="700">
+      <text x="114" y="97">1. Author policy</text><text x="326" y="97">2. Submit request</text>
+      <text x="538" y="97">3. Evaluate</text><text x="750" y="97">4. Inspect receipt</text><text x="974" y="97">5. Optional sandbox</text>
+    </g>
+    <g fill="#334155" font-size="12"><text x="114" y="120">JSON / YAML</text><text x="326" y="120">paths · argv · env</text><text x="538" y="120">deny by default</text><text x="750" y="120">decision + reasons</text><text x="974" y="120">separate enforcement</text></g>
+    <g stroke="#93c5fd" stroke-width="3" marker-end="url(#arrow)"><path d="M207 105h21"/><path d="M419 105h21"/><path d="M631 105h21"/><path d="M843 105h21"/></g>
+    <text x="550" y="36" fill="#f8fafc" font-size="22" font-weight="700">agent-policy · review first, enforce elsewhere</text>
+    <text x="550" y="184" fill="#bfdbfe" font-size="13">The evaluator performs no operation and is not a kernel sandbox.</text>
+  </g>
+</svg>

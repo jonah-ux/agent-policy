@@ -3,18 +3,34 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent_policy"
-version = "0.1.1"
-description = "agent capability policy checker"
+name = "agent-policy"
+version = "0.2.0"
+description = "Deny-by-default policy evaluation for agent operations"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{name = "Jonah Helland"}]
+keywords = ["policy", "security", "agents", "authorization"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+]
 dependencies = []
+
+[project.optional-dependencies]
+yaml = ["PyYAML>=6.0"]
+dev = ["build>=1.2", "pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]
 agent-policy = "agent_policy.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
