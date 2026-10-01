@@ -1,11 +1,17 @@
 # Releasing
 
-Run tests, build wheel and sdist, install both in fresh environments, run the demo, create an annotated tag through the approved repository route, publish wheel/source/checksum assets, then verify a fresh download.
+1. Update the version in `pyproject.toml`, `src/agent_policy/__init__.py`, and `CHANGELOG.md`.
+2. Run the supported test matrix locally where available:
 
-## Automated prerelease path
+   ```console
+   python -m pip install -e '.[dev]'
+   pytest
+   python -m build
+   ```
 
-The reviewed `.github/workflows/release.yml` runs only for an annotated semantic-version tag such as
-`v0.1.0` (or the repository's current version). It builds the wheel and source archive, writes
-`SHA256SUMS`, and creates a GitHub prerelease with those assets. A normal push to `main` does not
-publish anything. Keep the release deliberate: complete the checks above, review the exact commit,
-then push the approved tag through the repository's governed route and verify the downloaded assets.
+3. Inspect wheel and source archive contents with `python -m zipfile -l dist/*.whl` and `tar -tzf dist/*.tar.gz`.
+4. Create a signed, reviewed annotated tag only after CI is green. Build artifacts must be generated from the tag in a clean checkout.
+5. The configured release workflow validates the tag identity, builds wheel/source/checksum assets, installs both artifact types in fresh environments, runs the CLI smoke check, and creates a GitHub prerelease.
+6. Verify the published artifact in a fresh Python 3.11+ environment and run the installed demo using only synthetic fixtures.
+
+A release is not an enforcement mechanism. Document any separately deployed sandbox or platform controls in the release notes.
