@@ -8,7 +8,7 @@ import pathlib
 import sys
 from typing import Any
 
-from . import PolicyError, evaluate
+from . import PolicyError, compose_policies, evaluate
 
 
 def _load(path: str) -> Any:
@@ -47,12 +47,26 @@ def build_parser() -> argparse.ArgumentParser:
         sub.add_argument("--policy", required=True, help="JSON policy file (or YAML with the yaml extra)")
         sub.add_argument("--request", required=True, help="JSON request file (or YAML with the yaml extra)")
         sub.add_argument("--receipt", action="store_true", help="emit a machine-readable receipt envelope")
+    compose = subparsers.add_parser(
+        "compose",
+        help="compose policy layers and reject ambiguous rule identities",
+    )
+    compose.add_argument(
+        "--policy",
+        dest="policies",
+        action="append",
+        required=True,
+        help="policy layer (repeat in evaluation order)",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        if args.command == "compose":
+            _dump(compose_policies([_load(path) for path in args.policies]))
+            return 0
         policy = _load(args.policy)
         request = _load(args.request)
         result = evaluate(policy, request)

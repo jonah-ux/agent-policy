@@ -14,4 +14,6 @@
 5. The configured release workflow validates the tag identity, builds wheel/source/checksum assets, installs both artifact types in fresh environments, runs the CLI smoke check, and creates a GitHub prerelease.
 6. Verify the published artifact in a fresh Python 3.11+ environment and run the installed demo using only synthetic fixtures.
 
+For a composition change, also run `agent-policy compose` with two synthetic layers and verify that a duplicate rule ID exits with status `2`. Record the policy/request digests from an installed `explain` or `dry-run --receipt` invocation in the release evidence; these are audit identities, not a claim that the package enforces operating-system permissions.
+
 A release is not an enforcement mechanism. Document any separately deployed sandbox or platform controls in the release notes.

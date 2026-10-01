@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import fnmatch
+import hashlib
+import json
 import re
 from typing import Any
 
@@ -211,6 +213,44 @@ def validate_request(value: Any) -> dict[str, Any]:
     return {"version": 1, "operations": [_validate_operation(op, i) for i, op in enumerate(request["operations"])]}
 
 
+def _digest(value: Any) -> str:
+    """Hash normalized JSON without exposing policy or request contents."""
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def policy_digest(value: Any) -> str:
+    """Return the SHA-256 identity of a normalized policy."""
+    return _digest(validate_policy(value))
+
+
+def compose_policies(values: Any) -> dict[str, Any]:
+    """Compose validated policy layers while keeping rule identity unambiguous.
+
+    Rules are evaluated in the supplied layer order. Explicit deny rules still
+    override allows, while duplicate rule IDs are rejected so an explanation
+    can always identify one source rule without silently shadowing a layer.
+    """
+    if not isinstance(values, (list, tuple)) or not values:
+        raise PolicyError("policies must be a non-empty list")
+    rules: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, value in enumerate(values):
+        policy = validate_policy(value)
+        for rule in policy["rules"]:
+            rule_id = rule["id"]
+            if rule_id in seen:
+                raise PolicyError(f"policies[{index}] duplicates rule id '{rule_id}'")
+            seen.add(rule_id)
+            rules.append(rule)
+    return {"version": 1, "default": "deny", "rules": rules}
+
+
 def _matches(rule: dict[str, Any], operation: dict[str, Any]) -> bool:
     kind = operation["type"]
     if rule["kind"] != kind or operation["action"] not in rule["actions"]:
@@ -260,27 +300,54 @@ def evaluate(policy_value: Any, request_value: Any) -> dict[str, Any]:
     request = validate_request(request_value)
     results: list[dict[str, Any]] = []
     for index, operation in enumerate(request["operations"]):
-        matched = [rule for rule in policy["rules"] if _matches(rule, operation)]
-        denies = [rule for rule in matched if rule["effect"] == "deny"]
-        allows = [rule for rule in matched if rule["effect"] == "allow"]
+        matched = [
+            (rule_index, rule)
+            for rule_index, rule in enumerate(policy["rules"])
+            if _matches(rule, operation)
+        ]
+        matched_rules = [rule for _, rule in matched]
+        denies = [rule for rule in matched_rules if rule["effect"] == "deny"]
+        allows = [rule for rule in matched_rules if rule["effect"] == "allow"]
         if denies:
             decision = "deny"
+            decision_source = "explicit_deny"
             explanation = "explicit deny rule matched; deny rules override allows"
         elif allows:
             decision = "allow"
+            decision_source = "explicit_allow"
             explanation = "one or more allow rules matched and no deny rule matched"
         else:
             decision = "deny"
+            decision_source = "default_deny"
             explanation = "no allow rule matched; default is deny"
         results.append({
             "index": index,
             **_summary(operation),
             "decision": decision,
+            "decision_source": decision_source,
             "explanation": explanation,
             "matched_rules": [
-                {"id": rule["id"], "effect": rule["effect"], "reason": rule.get("reason", "")}
-                for rule in matched
+                {
+                    "index": rule_index,
+                    "id": rule["id"],
+                    "effect": rule["effect"],
+                    "reason": rule.get("reason", ""),
+                }
+                for rule_index, rule in matched
             ],
         })
     overall = "allow" if all(result["decision"] == "allow" for result in results) else "deny"
-    return {"decision": overall, "operations": results}
+    return {
+        "decision": overall,
+        "policy": {
+            "version": policy["version"],
+            "sha256": _digest(policy),
+            "rule_count": len(policy["rules"]),
+        },
+        "request": {
+            "version": request["version"],
+            "sha256": _digest(request),
+            "operation_count": len(request["operations"]),
+        },
+        "operations": results,
+    }
