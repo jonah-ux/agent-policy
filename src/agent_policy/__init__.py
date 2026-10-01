@@ -2,16 +2,20 @@
 
 from .engine import (
     PolicyError,
+    compose_policies,
     evaluate,
     normalize_path,
+    policy_digest,
     validate_policy,
     validate_request,
 )
 
 __all__ = [
     "PolicyError",
+    "compose_policies",
     "evaluate",
     "normalize_path",
+    "policy_digest",
     "validate_policy",
     "validate_request",
 ]

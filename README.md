@@ -46,6 +46,18 @@ Exit status is `0` only when every operation is allowed, `1` when any operation 
 
 Operations are exact structured data, not shell strings. For commands, the first argv item is matched against `commands`; optional `argv_patterns` match the complete argv. Paths and Git repository identifiers are workspace-relative and reject absolute paths, home paths, NUL bytes, and `..` components. The evaluator never expands variables, follows symlinks, or resolves a filesystem path.
 
+## Compose and audit decisions
+
+Use `compose` to combine policy layers in an explicit order before handing the result to an evaluator:
+
+```console
+agent-policy compose --policy baseline.json --policy workspace.json > effective-policy.json
+```
+
+Every layer is validated with the same strict schema. Duplicate rule IDs are rejected with exit status `2`, so a later layer cannot silently replace an earlier rule. Evaluation keeps the deny-by-default and explicit-deny precedence rules after composition.
+
+`explain` and `dry-run --receipt` include SHA-256 identities for the normalized policy and request, the normalized rule count, each matching rule's position, and a `decision_source` (`explicit_allow`, `explicit_deny`, or `default_deny`). Digests identify the reviewed inputs without copying policy contents, command arguments, or other potentially sensitive values into a receipt.
+
 ## Related tools
 
 Pair [Agent Policy](https://github.com/jonah-ux/agent-policy) with [Agent Sandbox Run](https://github.com/jonah-ux/agent-sandbox-run) for execution receipts, [Agent Proof](https://github.com/jonah-ux/agent-proof) for evidence, and [MCP Doctor](https://github.com/jonah-ux/mcp-doctor) for tool-contract checks.
