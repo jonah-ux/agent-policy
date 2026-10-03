@@ -13,13 +13,15 @@ A small, standalone Python 3.11+ CLI for reviewing agent operations against an e
 ```console
 git clone https://github.com/jonah-ux/agent-policy.git
 cd agent-policy
+python3 -m venv .venv
+. .venv/bin/activate
 python3 -m pip install .
 agent-policy --help
 ```
 
 The checkout install above is the reproducible source path. No runtime dependencies are required.
 
-No runtime dependencies are required. YAML input is optional: `python3 -m pip install 'agent-policy[yaml]'`. Platform sandbox helpers are optional and never invoked by this package.
+No runtime dependencies are required. YAML input is optional: `python3 -m pip install '.[yaml]'` from the checkout. Platform sandbox helpers are optional and never invoked by this package.
 
 ## Quick start
 
