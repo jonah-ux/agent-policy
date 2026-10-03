@@ -118,8 +118,9 @@ python scripts/audit_public_surface.py --json
 The static receipt checks the dependency and license declarations, release-workflow provenance
 markers, and high-signal secret patterns across tracked text files. Pass a built `dist/` directory
 with `--dist-dir dist` to compare wheel and sdist bytes with `SHA256SUMS`. Missing artifacts remain
-`unavailable`; a passing audit does not claim security, deployment, adoption, or production
-readiness.
+`unavailable`; pass `--require-dist` to make omission block a release review. Supplied malformed,
+extra, or symlinked artifacts block the receipt; a passing audit does not claim security,
+deployment, adoption, or production readiness.
 
 ## License
 
