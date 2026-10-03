@@ -25,7 +25,10 @@ def test_manifest_pins_native_owner_and_agent_proof_adapter():
     assert manifest["schema"] == "agent-systems-lab-policy-conformance/v1"
     assert manifest["owner"] == "agent-policy"
     assert manifest["native_schema"] == "agent-policy/v1"
+    assert manifest["receipt_schema"] == "agent-policy/receipt/v1"
     assert manifest["shared_adapter"]["schema"] == "agent-proof/interop/v1"
+    assert manifest["shared_adapter"]["revision"] == "399564d4e4c1fedaec278409a7821b42eaf76563"
+    assert manifest["shared_adapter"]["manifest_sha256"] == "62348cb59c986e3bba00af059774d433a5e3d68f48422c419ac6d6852d250de3"
     assert len(manifest["cases"]) == 5
     assert manifest["privacy"]["raw_policy_values_exported"] is False
     assert manifest["privacy"]["request_targets_summarized"] is True
