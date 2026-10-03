@@ -3,7 +3,7 @@
 This fixture is deliberately synthetic. Run it from the repository root after installing the package:
 
 ```console
-python -m pip install .
+python3 -m pip install .
 set +e
 agent-policy dry-run --policy examples/policy.json --request examples/request.json --receipt
 status=$?
