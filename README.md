@@ -11,15 +11,13 @@ A small, standalone Python 3.11+ CLI for reviewing agent operations against an e
 ## Install
 
 ```console
-python3 -m pip install agent-policy
+git clone https://github.com/jonah-ux/agent-policy.git
+cd agent-policy
+python3 -m pip install .
 agent-policy --help
 ```
 
-From a checkout:
-
-```console
-python3 -m pip install .
-```
+The checkout install above is the reproducible source path. No runtime dependencies are required.
 
 No runtime dependencies are required. YAML input is optional: `python3 -m pip install 'agent-policy[yaml]'`. Platform sandbox helpers are optional and never invoked by this package.
 
@@ -57,6 +55,14 @@ agent-policy compose --policy baseline.json --policy workspace.json > effective-
 Every layer is validated with the same strict schema. Duplicate rule IDs are rejected with exit status `2`, so a later layer cannot silently replace an earlier rule. Evaluation keeps the deny-by-default and explicit-deny precedence rules after composition.
 
 `explain` and `dry-run --receipt` include SHA-256 identities for the normalized policy and request, the normalized rule count, each matching rule's position, and a `decision_source` (`explicit_allow`, `explicit_deny`, or `default_deny`). Digests identify the reviewed inputs without copying policy contents, command arguments, or other potentially sensitive values into a receipt.
+
+## Open the policy walkthrough
+
+The [policy decision walkthrough](docs/walkthrough.html) is a standalone, dependency-free
+tour of the deny-by-default flow. Click an operation to inspect its matching rule, decision source,
+and receipt-shaped explanation. The fixture is synthetic and browser-only; the command panel gives
+you the exact local reproduction path. It is a policy tour, not a magic wand for the operating
+system — bring a sandbox when you need enforcement.
 
 ## Related tools
 
