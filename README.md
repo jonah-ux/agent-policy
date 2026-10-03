@@ -44,6 +44,31 @@ $ agent-policy dry-run --policy examples/policy.json --request examples/request.
 
 Exit status is `0` only when every operation is allowed, `1` when any operation is denied, and `2` for malformed input. `check` emits only the aggregate decision; `explain` emits rule matches and reasons; `dry-run` makes the non-execution mode explicit. None of these commands perform the requested operation.
 
+Use `--receipt` or `--json` when a caller needs a machine-readable error on
+stdout. Invalid UTF-8, malformed JSON or YAML, unreadable files, and schema
+validation failures use the stable `agent-policy/error/v1` envelope and keep
+exit status `2`:
+
+```json
+{
+  "schema": "agent-policy/error/v1",
+  "status": "error",
+  "ok": false,
+  "performed": false,
+  "tool": "agent-policy",
+  "mode": "dry-run",
+  "error": {
+    "code": "policy_json_invalid",
+    "input": "policy",
+    "message": "policy input is not valid JSON"
+  }
+}
+```
+
+Without either flag, the same failure remains a short human-readable stderr
+diagnostic. No input contents or parser tracebacks are copied into the machine
+envelope.
+
 Operations are exact structured data, not shell strings. For commands, the first argv item is matched against `commands`; optional `argv_patterns` match the complete argv. Paths and Git repository identifiers are workspace-relative and reject absolute paths, home paths, NUL bytes, and `..` components. The evaluator never expands variables, follows symlinks, or resolves a filesystem path.
 
 ## Compose and audit decisions
