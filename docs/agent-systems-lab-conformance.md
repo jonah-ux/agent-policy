@@ -6,7 +6,8 @@ its native decision boundary explicit without importing Agent Proof or changing
 the policy evaluator's runtime behavior.
 
 The manifest records the reviewed Agent Proof `agent-proof/interop/v1` adapter
-as the downstream handoff owner. Agent Policy proves the fields it owns locally:
+as the downstream handoff owner, with an immutable revision and manifest SHA-256
+pin. Agent Policy proves the fields it owns locally:
 explicit allow, explicit deny, default deny, normalized policy/request hashes,
 and fail-closed handling for traversal and unknown policy versions. The receipt
 does not copy raw policy patterns into the normalized evidence surface; request
