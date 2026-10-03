@@ -167,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
             result = {"decision": result["decision"]}
         if args.receipt:
             result = {
+                "schema": "agent-policy/receipt/v1",
                 "receipt_version": 1,
                 "tool": "agent-policy",
                 "mode": args.command,
