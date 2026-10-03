@@ -107,6 +107,21 @@ python -m build
 
 Fixtures are synthetic and contain no credentials or live network calls. See [`SECURITY.md`](SECURITY.md) for the threat model and [`CONTRIBUTING.md`](CONTRIBUTING.md) for changes.
 
+### Public release audit
+
+Run the owner-native `agent-policy-public-audit/v1` receipt from a clean checkout:
+
+```console
+python scripts/audit_public_surface.py --json
+python scripts/audit_public_surface.py --dist-dir ./dist --json
+```
+
+The receipt inventories declared build/runtime and optional dependencies, checks the MIT license
+and release markers, scans tracked text files for a small set of high-signal credential patterns,
+and optionally compares wheel/source-archive bytes with `SHA256SUMS`. Without a distribution
+directory, artifact state is `unavailable`. A passing audit does not claim complete DLP, security
+certification, reproducible builds across machines, deployment, adoption, or production readiness.
+
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
