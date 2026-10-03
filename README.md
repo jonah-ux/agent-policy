@@ -107,6 +107,20 @@ python -m build
 
 Fixtures are synthetic and contain no credentials or live network calls. See [`SECURITY.md`](SECURITY.md) for the threat model and [`CONTRIBUTING.md`](CONTRIBUTING.md) for changes.
 
+## Public surface audit
+
+Run the owner-native supply-chain and privacy audit from a clean checkout:
+
+```console
+python scripts/audit_public_surface.py --json
+```
+
+The static receipt checks the dependency and license declarations, release-workflow provenance
+markers, and high-signal secret patterns across tracked text files. Pass a built `dist/` directory
+with `--dist-dir dist` to compare wheel and sdist bytes with `SHA256SUMS`. Missing artifacts remain
+`unavailable`; a passing audit does not claim security, deployment, adoption, or production
+readiness.
+
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
