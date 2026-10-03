@@ -53,3 +53,4 @@ class PublicAuditTests(unittest.TestCase):
             result = _module().audit(dist)
         self.assertEqual(result["artifact_audit"]["state"], "blocked")
         self.assertEqual(set(result["artifact_audit"]["mismatches"]), {"demo.whl", "demo.tar.gz"})
+        self.assertEqual(result["result"], "blocked")
