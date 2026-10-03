@@ -100,9 +100,9 @@ Pair [Agent Policy](https://github.com/jonah-ux/agent-policy) with [Agent Sandbo
 ```console
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e '.[dev]'
+python3 -m pip install -e '.[dev]'
 pytest
-python -m build
+python3 -m build
 ```
 
 Fixtures are synthetic and contain no credentials or live network calls. See [`SECURITY.md`](SECURITY.md) for the threat model and [`CONTRIBUTING.md`](CONTRIBUTING.md) for changes.
@@ -112,7 +112,7 @@ Fixtures are synthetic and contain no credentials or live network calls. See [`S
 Run the owner-native supply-chain and privacy audit from a clean checkout:
 
 ```console
-python scripts/audit_public_surface.py --json
+python3 scripts/audit_public_surface.py --json
 ```
 
 The static receipt checks the dependency and license declarations, release-workflow provenance

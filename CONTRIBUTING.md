@@ -7,9 +7,9 @@ Thanks for contributing. Keep the project standalone, deterministic, and depende
 ```console
 python3.11 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e '.[dev]'
+python3 -m pip install -e '.[dev]'
 pytest
-python -m build
+python3 -m build
 ```
 
 Add focused tests for policy validation and every behavior change. Fixtures must be synthetic: do not add credentials, private hostnames, or live network calls. Keep CLI output JSON and preserve exit codes: `0` all allowed, `1` denied, `2` malformed input.
