@@ -19,7 +19,7 @@ python3 -m pip install .
 agent-policy --help
 ```
 
-The checkout install above is the reproducible source path. No runtime dependencies are required.
+The checkout install above is the reproducible source path.
 
 No runtime dependencies are required. YAML input is optional: `python3 -m pip install '.[yaml]'` from the checkout. Platform sandbox helpers are optional and never invoked by this package.
 
